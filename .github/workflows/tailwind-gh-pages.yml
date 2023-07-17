@@ -30,13 +30,18 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Pages
         uses: actions/configure-pages@v3
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          source: ./
-          destination: ./_site
+          node-version: "20"
+          cache: "yarn"
+      - run: yarn install --frozen-lockfile # optional, --immutable
+      - name: Build with Tailwind
+        run: yarn run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
+        with:
+          path: public
 
   # Deployment job
   deploy:
