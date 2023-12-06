@@ -33,6 +33,11 @@ document.addEventListener("DOMContentLoaded", (e) => {
     // Required for ScrollMagic to work
     scrollBar: true,
     responsiveWidth: 800,
+    credits: {
+      enabled: true,
+      label: "Made with fullpage.js",
+      position: "bottom",
+    },
   });
 
   gsap.registerPlugin(ScrollTrigger);
