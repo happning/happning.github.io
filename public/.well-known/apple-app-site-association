@@ -1,0 +1,24 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["SD5TB66QBZ.app.happning.happning"],
+        "components": [
+          {
+            "comment": "Exclude root path from opening in the app or clip",
+            "/": "/",
+            "exclude": true
+          },
+          {
+            "comment": "Catch-all for everything else; iOS will prefer the main app if installed, otherwise fallback to the App Clip",
+            "/": "/*"
+          }
+        ]
+      }
+    ]
+  },
+  "appclips": {
+    "apps": ["SD5TB66QBZ.app.happning.happning.Clip"]
+  }
+}
