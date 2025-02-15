@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Meta Tag for App Clip invocation on iOS -->
+    <meta
+      name="apple-itunes-app"
+      content="
+        app-id=6624295525, 
+        app-clip-bundle-id=app.happning.happning.Clip, 
+        app-clip-display=card
+      "
+    />
+    <meta property="og:image" content="../icon.png" />
+    <title>Happning Event</title>
+    
+    <!-- Link to your custom CSS or SCSS build, if any -->
+    <link rel="stylesheet" href="style.css" />
+    
+    <!-- 1) Load the Realm Web library BEFORE your own script -->
+    <script src="https://unpkg.com/realm-web/dist/bundle.iife.js"></script>
+  </head>
+
+  <body>
+    <!-- The container where we'll display the event details -->
+    <div id="event-page" class="event-page">
+      <h1 id="loading-msg">Loading Event...</h1>
+      <div id="event-data" style="display: none;">
+        <h2 id="event-name" class="event-title"></h2>
+        <h3 id="venue-name" class="event-venue"></h3>
+        <div id="event-time" class="event-time"></div>
+      </div>
+      <!-- Additional message to download the app -->
+      <div id="download-message" style="display: none; margin-top: 1rem;">
+        <p>
+          Download the app to see full event details: 
+          <a href="https://apps.apple.com/us/app/happning/id6624295525" target="_blank">
+            Download on the App Store
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <!-- 2) Your main script that references 'Realm' -->
+    <script>
+      /**
+       * Helper function to format date/time (similar to your Swift code).
+       */
+      function compressedDateRange(startStr, endStr) {
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+
+        const dayTimeFormatter = new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          hour12: true
+        });
+        const shortTimeFormatter = new Intl.DateTimeFormat("en-US", {
+          hour: "numeric",
+          minute: "numeric",
+          hour12: true
+        });
+
+        // Check if start and end are the same day
+        const sameDay = (
+          start.getFullYear() === end.getFullYear() &&
+          start.getMonth() === end.getMonth() &&
+          start.getDate() === end.getDate()
+        );
+
+        if (sameDay) {
+          return `${dayTimeFormatter.format(start)} - ${shortTimeFormatter.format(end)}`;
+        } else {
+          return `${dayTimeFormatter.format(start)} - ${dayTimeFormatter.format(end)}`;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Parse the eventId from the query string (e.g. ?id=xxxx)
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get("id");
+        if (!eventId) {
+          document.getElementById("loading-msg").textContent =
+            "No Event ID provided in URL (?id=...).";
+          return;
+        }
+
+        try {
+          // Replace with your actual Realm App ID
+          const realmAppId = "application-0-mrjjj";  // e.g. "myapp-abcde"
+          const app = new Realm.App({ id: realmAppId });
+
+          // Log in anonymously if not already logged in
+          let user;
+          if (!app.currentUser) {
+            user = await app.logIn(Realm.Credentials.anonymous());
+          } else {
+            user = app.currentUser;
+          }
+
+          // Call your Realm function (named 'loadEvent') with the event ID
+          const eventDataBson = await user.functions.loadEvent(eventId);
+          const eventData = eventDataBson;
+
+          // Update the DOM with the event data
+          const loadingMsgEl = document.getElementById("loading-msg");
+          const eventDataEl = document.getElementById("event-data");
+          const eventNameEl = document.getElementById("event-name");
+          const venueNameEl = document.getElementById("venue-name");
+          const eventTimeEl = document.getElementById("event-time");
+
+          if (!eventData) {
+            loadingMsgEl.textContent = "Could not load event data (empty).";
+            return;
+          }
+
+          // Insert data
+          eventNameEl.textContent = eventData.name || "Unnamed Event";
+          venueNameEl.textContent = eventData.venue?.name || "";
+          eventTimeEl.textContent = compressedDateRange(eventData.start, eventData.end);
+
+          // Hide "Loading..." message, show the event info and download message
+          loadingMsgEl.style.display = "none";
+          eventDataEl.style.display = "block";
+          document.getElementById("download-message").style.display = "block";
+        } catch (err) {
+          console.error("Error loading event data:", err);
+          document.getElementById("loading-msg").textContent =
+            "Error loading event: " + err.message;
+        }
+      });
+    </script>
+  </body>
+</html>
