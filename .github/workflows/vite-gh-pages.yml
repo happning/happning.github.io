@@ -1,29 +1,21 @@
-## https://vitejs.dev/guide/static-deploy#github-pages
 # Simple workflow for deploying static content to GitHub Pages
 name: Deploy Vite to Github Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
@@ -32,24 +24,36 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: "yarn"
+
       - name: Install dependencies
-        run: yarn install --frozen-lockfile # optional, --immutable
+        run: yarn install --frozen-lockfile
+
       - name: Build
         run: yarn run build
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload dist repository
-          path: "./dist"
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v3
+
+      # Debug: Ensure your ./dist folder actually has files
       - name: List dist folder
         run: ls -la ./dist
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        # You can try @v2 or @v3, but some folks need @v3 to produce .tgz 
+        # for the deploy-pages@v2 action to work correctly.
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "./dist"
+          # Optional: name your artifact explicitly
+          artifact-name: "my-pages-artifact"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        # Most people use @v2 here
+        uses: actions/deploy-pages@v2
