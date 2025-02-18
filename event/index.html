@@ -11,33 +11,152 @@
         app-clip-display=card
       "
     />
+    
+    <!-- IMPORTANT: Add the responsive viewport meta tag -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <meta property="og:image" content="../icon.png" />
     <title>Happning Event</title>
-    
-    <!-- Link to your custom CSS or SCSS build, if any -->
-    <link rel="stylesheet" href="style.css" />
-    
+
+    <!-- Inline Styles (could be external .css) -->
+    <style>
+      /* Base setup */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #f5f5f5;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      .event-page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+      }
+
+      /* Simple pop-in for the card container */
+      @keyframes popIn {
+        0% {
+          transform: scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .card {
+        background-color: #fff;
+        width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        text-align: center;
+
+        /* Animate the card's entrance */
+        animation: popIn 0.5s ease forwards;
+      }
+
+      /* Subtle pulsing effect for "Loading Event..." */
+      @keyframes pulse {
+        0% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.5;
+        }
+      }
+
+      #loading-msg {
+        font-size: 1.1rem;
+        color: #777;
+        animation: pulse 1s ease-in-out infinite alternate;
+      }
+
+      .invitation-text {
+        margin-top: 0;
+        font-size: 1rem;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .event-title {
+        font-size: 1.4rem;
+        margin: 0.5rem 0;
+      }
+
+      .event-venue, .event-time {
+        font-size: 1.1rem;
+        color: #666;
+        margin: 0.25rem 0;
+      }
+
+      .download-message {
+        margin-top: 1.5rem;
+        font-size: 0.95rem;
+        text-align: center;
+      }
+
+      .download-message a {
+        color: #007aff; /* iOS-inspired link color */
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+
+      /* Gentle link hover effect */
+      .download-message a:hover {
+        color: #005bb5;
+        text-decoration: underline;
+      }
+    </style>
+
     <!-- 1) Load the Realm Web library BEFORE your own script -->
     <script src="https://unpkg.com/realm-web/dist/bundle.iife.js"></script>
   </head>
 
   <body>
-    <!-- The container where we'll display the event details -->
     <div id="event-page" class="event-page">
-      <h1 id="loading-msg">Loading Event...</h1>
-      <div id="event-data" style="display: none;">
-        <h2 id="event-name" class="event-title"></h2>
-        <h3 id="venue-name" class="event-venue"></h3>
-        <div id="event-time" class="event-time"></div>
-      </div>
-      <!-- Additional message to download the app -->
-      <div id="download-message" style="display: none; margin-top: 1rem;">
-        <p>
-          Download the app to see full event details: 
-          <a href="https://apps.apple.com/us/app/happning/id6624295525" target="_blank">
-            Download on the App Store
-          </a>
-        </p>
+      
+      <!-- Card container -->
+      <div class="card">
+        <h1 id="loading-msg">Loading Event...</h1>
+
+        <!-- The container where we'll display the event details -->
+        <div id="event-data" style="display: none;">
+          <!-- Host invitation text -->
+          <p id="invited-by" class="invitation-text" style="display: none;"></p>
+
+          <h2 id="event-name" class="event-title"></h2>
+          <h3 id="venue-name" class="event-venue"></h3>
+          <div id="event-time" class="event-time"></div>
+        </div>
+        
+        <!-- Additional message to download the app -->
+        <div
+          id="download-message"
+          class="download-message"
+          style="display: none;"
+        >
+          <p>
+            Download the app to see full event details: 
+            <a
+              href="https://apps.apple.com/us/app/happning/id6624295525"
+              target="_blank"
+            >
+              Download on the App Store
+            </a>
+          </p>
+        </div>
       </div>
     </div>
 
@@ -64,11 +183,10 @@
         });
 
         // Check if start and end are the same day
-        const sameDay = (
+        const sameDay =
           start.getFullYear() === end.getFullYear() &&
           start.getMonth() === end.getMonth() &&
-          start.getDate() === end.getDate()
-        );
+          start.getDate() === end.getDate();
 
         if (sameDay) {
           return `${dayTimeFormatter.format(start)} - ${shortTimeFormatter.format(end)}`;
@@ -104,27 +222,39 @@
           const eventDataBson = await user.functions.loadEvent(eventId);
           const eventData = eventDataBson;
 
-          // Update the DOM with the event data
+          // References to the DOM elements
           const loadingMsgEl = document.getElementById("loading-msg");
           const eventDataEl = document.getElementById("event-data");
           const eventNameEl = document.getElementById("event-name");
           const venueNameEl = document.getElementById("venue-name");
           const eventTimeEl = document.getElementById("event-time");
+          const invitedByEl = document.getElementById("invited-by");
+          const downloadMessageEl = document.getElementById("download-message");
 
           if (!eventData) {
             loadingMsgEl.textContent = "Could not load event data (empty).";
             return;
           }
 
-          // Insert data
+          // Hide the "Loading..." message
+          loadingMsgEl.style.display = "none";
+          
+          // Insert data into the DOM
+          // Always display the first host name if it exists; fallback to "Someone"
+          const hostName = (eventData.hosts && eventData.hosts.length > 0)
+            ? (eventData.hosts[0].displayName || "Someone")
+            : "Someone";
+
+          invitedByEl.textContent = `${hostName} invited you to...`;
+          invitedByEl.style.display = "block"; // Show it now that we have the data
+
           eventNameEl.textContent = eventData.name || "Unnamed Event";
           venueNameEl.textContent = eventData.venue?.name || "";
           eventTimeEl.textContent = compressedDateRange(eventData.start, eventData.end);
 
-          // Hide "Loading..." message, show the event info and download message
-          loadingMsgEl.style.display = "none";
+          // Show the event info container and download message
           eventDataEl.style.display = "block";
-          document.getElementById("download-message").style.display = "block";
+          downloadMessageEl.style.display = "block";
         } catch (err) {
           console.error("Error loading event data:", err);
           document.getElementById("loading-msg").textContent =
