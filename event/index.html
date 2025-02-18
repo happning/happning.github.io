@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- Meta Tag for App Clip invocation on iOS -->
+    <!-- App Clip invocation on iOS -->
     <meta
       name="apple-itunes-app"
       content="
@@ -12,163 +12,190 @@
       "
     />
     
-    <!-- IMPORTANT: Add the responsive viewport meta tag -->
+    <!-- Viewport for mobile scaling -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <meta property="og:image" content="../icon.png" />
     <title>Happning Event</title>
+    
+    <!-- Example: load custom fonts via Google Fonts (optional) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Urbanist:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-    <!-- Inline Styles (could be external .css) -->
+    <!-- Inline Styles -->
     <style>
-      /* Base setup */
+      /* 
+        We load two fonts:
+          - Syncopate (for the big event title)
+          - Urbanist (for date/time and venue)
+      */
+
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
 
+      /* Light mode (default) colors */
       body {
-        background: #f5f5f5;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #ffffff;
+        color: #000000;
+        transition: background-color 0.3s, color 0.3s;
       }
 
-      .event-page {
+      /* Dark mode override using prefers-color-scheme */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #000000;
+          color: #ffffff;
+        }
+        .date-time {
+          border: 2px solid #ffffff;
+        }
+      }
+
+      .container {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 2rem 1rem;
+        min-height: 100vh; /* fill screen height */
+        padding: 50px 20px 20px; /* top, sides, bottom */
       }
 
-      /* Simple pop-in for the card container */
-      @keyframes popIn {
-        0% {
-          transform: scale(0.9);
-          opacity: 0;
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      .card {
-        background-color: #fff;
-        width: 100%;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        text-align: center;
-
-        /* Animate the card's entrance */
-        animation: popIn 0.5s ease forwards;
-      }
-
-      /* Subtle pulsing effect for "Loading Event..." */
+      /*
+       * LOADING MESSAGE
+       */
       @keyframes pulse {
-        0% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0.5;
-        }
+        0%   { opacity: 1; }
+        50%  { opacity: 0.6; }
+        100% { opacity: 1; }
       }
-
       #loading-msg {
+        animation: pulse 1.2s ease-in-out infinite;
         font-size: 1.1rem;
-        color: #777;
-        animation: pulse 1s ease-in-out infinite alternate;
+        margin-bottom: 1rem;
       }
 
-      .invitation-text {
-        margin-top: 0;
+      /*
+       * EVENT INFO
+       */
+      #event-data {
+        display: none; /* hidden until loaded */
+      }
+
+      #invited-by {
+        display: none; /* shown once we have the host name */
+        font-family: "Urbanist", sans-serif;
+        font-weight: 600; /* "Urbanist-Semibold" */
         font-size: 1rem;
-        font-weight: 500;
-        color: #555;
+        margin-bottom: 8px;
+        text-align: center;
       }
 
-      .event-title {
-        font-size: 1.4rem;
-        margin: 0.5rem 0;
+      /* The big event name (like "Syncopate-Bold", size ~35 in SwiftUI) */
+      #event-name {
+        font-family: "Syncopate", sans-serif;
+        font-weight: 700;
+        font-size: 2.2rem; /* ~35px */
+        text-align: center;
+        margin-bottom: 10px;
+        line-height: 1.2;
       }
 
-      .event-venue, .event-time {
-        font-size: 1.1rem;
-        color: #666;
-        margin: 0.25rem 0;
+      #venue-name {
+        font-family: "Urbanist", sans-serif;
+        font-weight: 600;
+        font-size: 1.125rem; /* ~18px */
+        margin-bottom: 5px;
+        text-align: center;
       }
 
-      .download-message {
-        margin-top: 1.5rem;
+      /* The date/time pill */
+      #event-time {
+        display: inline-block;
+        font-family: "Urbanist", sans-serif;
+        font-weight: 600; /* "Urbanist-Semibold" */
+        font-size: 1rem;  /* ~16px, scaled slightly */
+        padding: 8px 12px;
+        border: 2px solid #000000;
+        border-radius: 8px;
+        margin-top: 8px;
+        text-align: center;
+      }
+
+      /* For dark mode, we fix the border color with a media query up above */
+
+      /*
+       * DOWNLOAD MESSAGE
+       */
+      #download-message {
+        display: none; /* shown once event loads */
+        margin-top: 20px;
         font-size: 0.95rem;
         text-align: center;
       }
-
-      .download-message a {
-        color: #007aff; /* iOS-inspired link color */
+      #download-message a {
+        color: #007aff;
         text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s ease;
+      }
+      #download-message a:hover {
+        text-decoration: underline;
       }
 
-      /* Gentle link hover effect */
-      .download-message a:hover {
-        color: #005bb5;
-        text-decoration: underline;
+      /* Show a little fade-in for #event-data once loaded */
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+      .fade-in {
+        animation: fadeIn 0.5s ease forwards;
       }
     </style>
 
-    <!-- 1) Load the Realm Web library BEFORE your own script -->
+    <!-- 1) Realm Web library -->
     <script src="https://unpkg.com/realm-web/dist/bundle.iife.js"></script>
   </head>
 
   <body>
-    <div id="event-page" class="event-page">
-      
-      <!-- Card container -->
-      <div class="card">
-        <h1 id="loading-msg">Loading Event...</h1>
+    <div class="container">
+      <!-- LOADING TEXT -->
+      <h1 id="loading-msg">Loading Event...</h1>
 
-        <!-- The container where we'll display the event details -->
-        <div id="event-data" style="display: none;">
-          <!-- Host invitation text -->
-          <p id="invited-by" class="invitation-text" style="display: none;"></p>
+      <!-- EVENT DATA (hidden initially) -->
+      <div id="event-data">
+        <p id="invited-by"></p>
+        <h2 id="event-name"></h2>
+        <h3 id="venue-name"></h3>
+        <div id="event-time"></div>
+      </div>
 
-          <h2 id="event-name" class="event-title"></h2>
-          <h3 id="venue-name" class="event-venue"></h3>
-          <div id="event-time" class="event-time"></div>
-        </div>
-        
-        <!-- Additional message to download the app -->
-        <div
-          id="download-message"
-          class="download-message"
-          style="display: none;"
-        >
-          <p>
-            Download the app to see full event details: 
-            <a
-              href="https://apps.apple.com/us/app/happning/id6624295525"
-              target="_blank"
-            >
-              Download on the App Store
-            </a>
-          </p>
-        </div>
+      <!-- DOWNLOAD LINK (hidden initially) -->
+      <div id="download-message">
+        <p>
+          Download the app to see full event details:
+          <a href="https://apps.apple.com/us/app/happning/id6624295525" target="_blank">
+            Download on the App Store
+          </a>
+        </p>
       </div>
     </div>
 
-    <!-- 2) Your main script that references 'Realm' -->
+    <!-- MAIN SCRIPT -->
     <script>
       /**
-       * Helper function to format date/time (similar to your Swift code).
+       * Replicates the "compressedDateRange" function from SwiftUI.
        */
       function compressedDateRange(startStr, endStr) {
         const start = new Date(startStr);
         const end = new Date(endStr);
 
+        // e.g. "Jul 28, 5:00 PM"
         const dayTimeFormatter = new Intl.DateTimeFormat("en-US", {
           month: "short",
           day: "numeric",
@@ -176,6 +203,7 @@
           minute: "numeric",
           hour12: true
         });
+        // e.g. "9:00 PM"
         const shortTimeFormatter = new Intl.DateTimeFormat("en-US", {
           hour: "numeric",
           minute: "numeric",
@@ -189,76 +217,69 @@
           start.getDate() === end.getDate();
 
         if (sameDay) {
+          // e.g. "Jul 28, 5:00 PM - 9:00 PM"
           return `${dayTimeFormatter.format(start)} - ${shortTimeFormatter.format(end)}`;
         } else {
+          // e.g. "Jul 28, 5:00 PM - Jul 29, 2:00 AM"
           return `${dayTimeFormatter.format(start)} - ${dayTimeFormatter.format(end)}`;
         }
       }
 
       document.addEventListener("DOMContentLoaded", async () => {
-        // Parse the eventId from the query string (e.g. ?id=xxxx)
+        // 1) Check if we have an eventId in the URL (e.g. ?id=xxxx)
         const urlParams = new URLSearchParams(window.location.search);
         const eventId = urlParams.get("id");
+        const loadingMsgEl = document.getElementById("loading-msg");
+        const eventDataEl = document.getElementById("event-data");
+        const invitedByEl = document.getElementById("invited-by");
+        const eventNameEl = document.getElementById("event-name");
+        const venueNameEl = document.getElementById("venue-name");
+        const eventTimeEl = document.getElementById("event-time");
+        const downloadMessageEl = document.getElementById("download-message");
+
         if (!eventId) {
-          document.getElementById("loading-msg").textContent =
-            "No Event ID provided in URL (?id=...).";
+          loadingMsgEl.textContent = "No Event ID provided in URL (?id=...).";
           return;
         }
 
+        // 2) Connect to your Realm app
         try {
-          // Replace with your actual Realm App ID
-          const realmAppId = "application-0-mrjjj";  // e.g. "myapp-abcde"
+          const realmAppId = "application-0-mrjjj";  // Replace with your own
           const app = new Realm.App({ id: realmAppId });
 
-          // Log in anonymously if not already logged in
-          let user;
-          if (!app.currentUser) {
+          let user = app.currentUser;
+          if (!user) {
             user = await app.logIn(Realm.Credentials.anonymous());
-          } else {
-            user = app.currentUser;
           }
 
-          // Call your Realm function (named 'loadEvent') with the event ID
+          // 3) Load event from your function
           const eventDataBson = await user.functions.loadEvent(eventId);
-          const eventData = eventDataBson;
-
-          // References to the DOM elements
-          const loadingMsgEl = document.getElementById("loading-msg");
-          const eventDataEl = document.getElementById("event-data");
-          const eventNameEl = document.getElementById("event-name");
-          const venueNameEl = document.getElementById("venue-name");
-          const eventTimeEl = document.getElementById("event-time");
-          const invitedByEl = document.getElementById("invited-by");
-          const downloadMessageEl = document.getElementById("download-message");
-
-          if (!eventData) {
+          if (!eventDataBson) {
             loadingMsgEl.textContent = "Could not load event data (empty).";
             return;
           }
 
-          // Hide the "Loading..." message
-          loadingMsgEl.style.display = "none";
-          
-          // Insert data into the DOM
-          // Always display the first host name if it exists; fallback to "Someone"
-          const hostName = (eventData.hosts && eventData.hosts.length > 0)
-            ? (eventData.hosts[0].displayName || "Someone")
+          // 4) Populate the UI
+          loadingMsgEl.style.display = "none"; // remove the loading text
+          eventDataEl.style.display = "block"; // show event info
+          eventDataEl.classList.add("fade-in"); // animate in
+
+          // If multiple hosts, just take the first. Fallback to "Someone"
+          const hostName = eventDataBson.hosts && eventDataBson.hosts.length > 0
+            ? (eventDataBson.hosts[0].displayName || "Someone")
             : "Someone";
 
           invitedByEl.textContent = `${hostName} invited you to...`;
-          invitedByEl.style.display = "block"; // Show it now that we have the data
+          invitedByEl.style.display = "block";
 
-          eventNameEl.textContent = eventData.name || "Unnamed Event";
-          venueNameEl.textContent = eventData.venue?.name || "";
-          eventTimeEl.textContent = compressedDateRange(eventData.start, eventData.end);
+          eventNameEl.textContent = eventDataBson.name || "Unnamed Event";
+          venueNameEl.textContent = eventDataBson.venue?.name || "";
+          eventTimeEl.textContent = compressedDateRange(eventDataBson.start, eventDataBson.end);
 
-          // Show the event info container and download message
-          eventDataEl.style.display = "block";
-          downloadMessageEl.style.display = "block";
+          downloadMessageEl.style.display = "block"; // show the “Download the app” message
         } catch (err) {
           console.error("Error loading event data:", err);
-          document.getElementById("loading-msg").textContent =
-            "Error loading event: " + err.message;
+          loadingMsgEl.textContent = "Error loading event: " + err.message;
         }
       });
     </script>
